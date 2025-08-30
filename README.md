@@ -2,7 +2,7 @@
 <img src="/src/frontend/static/icons/Hipster_HeroLogoMaroon.svg" width="300" alt="Online Boutique" />
 </p> -->
 
-The ecommerce-app is built up on Google's **Online Boutique**, which is a cloud-first microservices demo application. The application is a web-based e-commerce app where users can browse items, add them to the cart, and purchase them.
+The ecommerce-app is built up on **Google's Online Boutique**, which is a cloud-first microservices demo application. The application is a web-based e-commerce app where users can browse items, add them to the cart, and purchase them.
 
 Google uses this application to demonstrate how developers can modernize enterprise applications using Google Cloud products.
 
