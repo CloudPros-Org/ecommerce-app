@@ -4,8 +4,11 @@ module "gke" {
 
   project_id = var.project_id
   name       = var.cluster_name
-  regional   = true
-  region     = var.region
+
+  regional   = false
+  zones      = [var.zone]
+
+  create_service_account = true
 
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet.name

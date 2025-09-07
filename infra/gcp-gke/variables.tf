@@ -35,10 +35,15 @@ variable "cluster_name" {
 
 variable "initial_node_count" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "machine_type" {
   type    = string
   default = "e2-standard-2"
+}
+
+variable "zone" {
+  type    = string
+  default = "europe-west2-b"
 }
