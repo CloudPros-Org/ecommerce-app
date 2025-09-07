@@ -24,10 +24,13 @@ jobs:
       id-token: write
     env:
       TF_IN_AUTOMATION: "true"
+      USE_GKE_GCLOUD_AUTH_PLUGIN: "True"
+      CLOUDSDK_CORE_DISABLE_PROMPTS: "1"
       GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
       GCP_REGION: ${{ inputs.region || secrets.GCP_REGION }}
       GCS_BACKEND_BUCKET: ${{ secrets.GCS_BACKEND_BUCKET }}
       GCS_BACKEND_PREFIX: "gke"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,13 +41,18 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
-      - name: Setup gcloud
+      - name: Setup gcloud (+ GKE auth plugin)
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: gke-gcloud-auth-plugin
 
-      - name: Setup Terraform
+      - name: Install Terraform & kubectl
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.7.5
+      - run: |
+          sudo apt-get update -y
+          sudo apt-get install -y kubectl
 
       - name: Ensure GCS bucket exists
         run: |
@@ -56,6 +64,7 @@ jobs:
       - name: Terraform Init (GCS backend)
         working-directory: infra/gcp-gke
         run: |
+          rm -rf .terraform .terraform.lock.hcl
           terraform init \
             -backend-config="bucket=${GCS_BACKEND_BUCKET}" \
             -backend-config="prefix=${GCS_BACKEND_PREFIX}"
@@ -73,22 +82,17 @@ jobs:
           CLUSTER: ${{ inputs.cluster_name }}
           PROJECT: ${{ env.GCP_PROJECT_ID }}
         run: |
-          # Discover cluster location (works for zonal or regional)
-          LOC=$(gcloud container clusters list \
-            --project "$PROJECT" \
-            --filter="name=${CLUSTER}" \
-            --format="value(location)")
-
-          if [ -z "$LOC" ]; then
-            echo "Cluster '${CLUSTER}' not found in project ${PROJECT}."
-            exit 1
-          fi
-
+          LOC=$(gcloud container clusters list --project "$PROJECT" \
+                --filter="name=${CLUSTER}" --format="value(location)")
+          [ -z "$LOC" ] && echo "Cluster '${CLUSTER}' not found in project ${PROJECT}." && exit 1
           echo "Discovered cluster location: $LOC"
-          # Try zone first, then region
           if ! gcloud container clusters get-credentials "${CLUSTER}" --zone "${LOC}" --project "${PROJECT}"; then
             gcloud container clusters get-credentials "${CLUSTER}" --region "${LOC}" --project "${PROJECT}"
           fi
-
-          # Dump a standalone kubeconfig
           kubectl config view --raw > infra/gcp-gke/kubeconfig
+
+      - name: Upload kubeconfig artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gke-kubeconfig
+          path: infra/gcp-gke/kubeconfig
