@@ -1,0 +1,9 @@
+variable "region" { type = string, default = "eu-west-2" }
+variable "cluster_name" { type = string, default = "demo-eks" }
+variable "vpc_cidr" { type = string, default = "10.0.0.0/16" }
+variable "private_subnets" { type = list(string), default = ["10.0.0.0/19","10.0.32.0/19","10.0.64.0/19"] }
+variable "public_subnets" { type = list(string), default = ["10.0.96.0/22","10.0.100.0/22","10.0.104.0/22"] }
+variable "desired_capacity" { type = number, default = 2 }
+variable "min_size" { type = number, default = 1 }
+variable "max_size" { type = number, default = 4 }
+variable "instance_types" { type = list(string), default = ["t3.medium"] }

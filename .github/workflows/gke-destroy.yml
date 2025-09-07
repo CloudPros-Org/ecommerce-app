@@ -1,0 +1,61 @@
+name: GKE Destroy (OIDC + GCS backend)
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: "GCP Project ID"
+        required: false
+        default: ""
+      region:
+        description: "GCP Region"
+        required: false
+        default: "europe-west2"
+      cluster_name:
+        description: "Cluster name (for consistency only)"
+        required: false
+        default: "demo-gke"
+      confirm:
+        description: "Type 'DESTROY' to confirm"
+        required: true
+
+jobs:
+  terraform:
+    if: ${{ github.event.inputs.confirm == 'DESTROY' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TF_IN_AUTOMATION: "true"
+      GCP_PROJECT_ID: ${{ inputs.project_id || secrets.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ inputs.region || secrets.GCP_REGION }}
+      GCS_BACKEND_BUCKET: ${{ secrets.GCS_BACKEND_BUCKET }}
+      GCS_BACKEND_PREFIX: "gke"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (OIDC)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init (GCS backend)
+        working-directory: infra/gcp-gke
+        run: |
+          terraform init             -backend-config="bucket=${GCS_BACKEND_BUCKET}"             -backend-config="prefix=${GCS_BACKEND_PREFIX}"             -backend-config="project=${GCP_PROJECT_ID}"
+
+      - name: Terraform Destroy
+        working-directory: infra/gcp-gke
+        run: |
+          terraform destroy -auto-approve             -var="project_id=${{ env.GCP_PROJECT_ID }}"             -var="region=${{ env.GCP_REGION }}"             -var="cluster_name=${{ inputs.cluster_name }}"

@@ -1,0 +1,54 @@
+name: EKS Destroy (Remote State)
+
+on:
+  workflow_dispatch:
+    inputs:
+      aws_region:
+        description: "AWS region"
+        required: false
+        default: "eu-west-2"
+      cluster_name:
+        description: "EKS cluster name (for consistency only)"
+        required: false
+        default: "demo-eks"
+      confirm:
+        description: "Type 'DESTROY' to confirm"
+        required: true
+
+jobs:
+  terraform:
+    if: ${{ github.event.inputs.confirm == 'DESTROY' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TF_IN_AUTOMATION: "true"
+      AWS_REGION: ${{ inputs.aws_region || secrets.AWS_REGION }}
+      TF_BACKEND_BUCKET: ${{ secrets.S3_BACKEND_BUCKET }}
+      TF_BACKEND_DDB_TABLE: ${{ secrets.S3_BACKEND_DDB_TABLE }}
+      TF_BACKEND_KEY: "eks/terraform.tfstate"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Terraform Init (S3 backend)
+        working-directory: infra/aws-eks
+        run: |
+          terraform init             -backend-config="bucket=${TF_BACKEND_BUCKET}"             -backend-config="key=${TF_BACKEND_KEY}"             -backend-config="region=${AWS_REGION}"             -backend-config="dynamodb_table=${TF_BACKEND_DDB_TABLE}"             -backend-config="encrypt=true"
+
+      - name: Terraform Destroy
+        working-directory: infra/aws-eks
+        run: |
+          terraform destroy -auto-approve             -var="region=${AWS_REGION}"             -var="cluster_name=${{ inputs.cluster_name }}"
