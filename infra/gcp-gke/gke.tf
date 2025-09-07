@@ -10,6 +10,10 @@ module "gke" {
   network    = google_compute_network.vpc.name
   subnetwork = google_compute_subnetwork.subnet.name
 
+  # Use the secondary range names from the subnetwork
+  ip_range_pods     = google_compute_subnetwork.subnet.secondary_ip_range[0].range_name
+  ip_range_services = google_compute_subnetwork.subnet.secondary_ip_range[1].range_name
+
   remove_default_node_pool = true
 
   node_pools = [{
@@ -21,10 +25,11 @@ module "gke" {
   }]
 }
 
+# Write kubeconfig so CI can publish it as an artifact
 resource "local_file" "kubeconfig" {
   filename = "kubeconfig"
   content  = module.gke.kubeconfig_raw
 }
 
-output "cluster_name" { value = module.gke.name }
-output "kubeconfig_path" { value = local_file.kubeconfig.filename }
+output "cluster_name"     { value = module.gke.name }
+output "kubeconfig_path"  { value = local_file.kubeconfig.filename }
