@@ -6,7 +6,7 @@ on:
       project_id:
         description: "GCP Project ID"
         required: false
-        default: ""
+        default: "spry-effect-470712-b5"
       region:
         description: "GCP Region"
         required: false
