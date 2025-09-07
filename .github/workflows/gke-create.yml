@@ -63,7 +63,21 @@ jobs:
       - name: Terraform Apply
         working-directory: infra/gcp-gke
         run: |
-          terraform apply -auto-approve             -var="project_id=${{ env.GCP_PROJECT_ID }}"             -var="region=${{ env.GCP_REGION }}"             -var="cluster_name=${{ inputs.cluster_name }}"
+          terraform apply -auto-approve \
+            -var="project_id=${{ env.GCP_PROJECT_ID }}" \
+            -var="region=${{ env.GCP_REGION }}" \
+            -var="cluster_name=${{ inputs.cluster_name }}"
+
+      - name: Generate kubeconfig via gcloud
+        env:
+          CLUSTER: ${{ inputs.cluster_name }}
+          REGION: ${{ env.GCP_REGION }}
+          PROJECT: ${{ env.GCP_PROJECT_ID }}
+        run: |
+          # Fetch credentials into runners default kubeconfig
+          gcloud container clusters get-credentials "${CLUSTER}" --region "${REGION}" --project "${PROJECT}"
+          # Write a standalone kubeconfig file for download
+          kubectl config view --raw > infra/gcp-gke/kubeconfig
 
       - name: Upload kubeconfig artifact
         uses: actions/upload-artifact@v4
