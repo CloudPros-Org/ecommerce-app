@@ -19,7 +19,7 @@ variable "subnet_ip_cidr_range" {
 
 variable "cluster_name" {
   type    = string
-  default = "demo-gke"
+  default = "ecommerce-app-cluster"
 }
 
 variable "initial_node_count" {

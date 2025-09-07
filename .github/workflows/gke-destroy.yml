@@ -14,7 +14,7 @@ on:
       cluster_name:
         description: "Cluster name (for consistency only)"
         required: false
-        default: "demo-gke"
+        default: "ecommerce-app-cluster"
       confirm:
         description: "Type 'DESTROY' to confirm"
         required: true
