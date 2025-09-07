@@ -71,16 +71,24 @@ jobs:
       - name: Generate kubeconfig via gcloud
         env:
           CLUSTER: ${{ inputs.cluster_name }}
-          REGION: ${{ env.GCP_REGION }}
           PROJECT: ${{ env.GCP_PROJECT_ID }}
         run: |
-          # Fetch credentials into runners default kubeconfig
-          gcloud container clusters get-credentials "${CLUSTER}" --region "${REGION}" --project "${PROJECT}"
-          # Write a standalone kubeconfig file for download
-          kubectl config view --raw > infra/gcp-gke/kubeconfig
+          # Discover cluster location (works for zonal or regional)
+          LOC=$(gcloud container clusters list \
+            --project "$PROJECT" \
+            --filter="name=${CLUSTER}" \
+            --format="value(location)")
 
-      - name: Upload kubeconfig artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: gke-kubeconfig
-          path: infra/gcp-gke/kubeconfig
+          if [ -z "$LOC" ]; then
+            echo "Cluster '${CLUSTER}' not found in project ${PROJECT}."
+            exit 1
+          fi
+
+          echo "Discovered cluster location: $LOC"
+          # Try zone first, then region
+          if ! gcloud container clusters get-credentials "${CLUSTER}" --zone "${LOC}" --project "${PROJECT}"; then
+            gcloud container clusters get-credentials "${CLUSTER}" --region "${LOC}" --project "${PROJECT}"
+          fi
+
+          # Dump a standalone kubeconfig
+          kubectl config view --raw > infra/gcp-gke/kubeconfig
