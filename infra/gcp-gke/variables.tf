@@ -47,3 +47,8 @@ variable "zone" {
   type    = string
   default = "europe-west2-b"
 }
+
+variable "deletion_protection" {
+  type    = bool
+  default = false
+}

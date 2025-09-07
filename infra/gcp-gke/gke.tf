@@ -8,6 +8,8 @@ module "gke" {
   regional   = false
   zones      = [var.zone]
 
+  deletion_protection = var.deletion_protection
+
   create_service_account = true
 
   network    = google_compute_network.vpc.name
