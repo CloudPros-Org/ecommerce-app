@@ -1,0 +1,52 @@
+{{- /*
+
+This file is displayed after a successful `helm install` or `helm upgrade`.
+*/ -}}
+
+Thank you for installing the **ecommerce** chart! 🚀
+
+Your release name is: {{ .Release.Name }}
+Your namespace is:   {{ .Release.Namespace }}
+
+---
+
+### 1. How to Install / Upgrade
+To install this chart (with all subcharts):
+  helm install {{ .Release.Name }} ./ecommerce -n {{ .Release.Namespace }}
+
+To upgrade after making changes:
+  helm upgrade {{ .Release.Name }} ./ecommerce -n {{ .Release.Namespace }}
+
+If you want to install into a different namespace:
+  kubectl create namespace my-namespace
+  helm install {{ .Release.Name }} ./ecommerce -n my-namespace
+
+---
+
+### 2. How to Verify Pods are Running
+Check the status of all pods:
+  kubectl get pods -n {{ .Release.Namespace }}
+
+You should see pods for the parent chart (ecommerce) and all subcharts 
+(auth, cart, payment, frontend, etc.) in the `Running` state.
+
+For detailed pod logs:
+  kubectl logs <pod-name> -n {{ .Release.Namespace }}
+
+---
+
+### 3. How to See Service Endpoints
+List all services:
+  kubectl get svc -n {{ .Release.Namespace }}
+
+For example:
+- To get the frontend URL (if it’s a NodePort or LoadBalancer):
+    kubectl get svc frontend -n {{ .Release.Namespace }}
+
+- To access internally via ClusterIP:
+    kubectl run tmp --rm -it --image=busybox --restart=Never \
+      -- wget -qO- http://<service-name>.<namespace>.svc.cluster.local:<port>
+
+---
+
+🎉 Done! Your ecommerce platform with subcharts should now be deployed and accessible.

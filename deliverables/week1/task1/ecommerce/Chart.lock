@@ -1,0 +1,42 @@
+dependencies:
+- name: frontend
+  repository: file://charts/frontend
+  version: 0.1.0
+- name: cartservice
+  repository: file://charts/cartservice
+  version: 0.1.0
+- name: productcatalogueservice
+  repository: file://charts/productcatalogueservice
+  version: 0.1.0
+- name: shippingservice
+  repository: file://charts/shippingservice
+  version: 0.1.0
+- name: emailservice
+  repository: file://charts/emailservice
+  version: 0.1.0
+- name: common
+  repository: file://charts/common
+  version: 0.1.0
+- name: checkoutservice
+  repository: file://charts/checkoutservice
+  version: 0.1.0
+- name: paymentservice
+  repository: file://charts/paymentservice
+  version: 0.1.0
+- name: recommendationservice
+  repository: file://charts/recommendationservice
+  version: 0.1.0
+- name: currencyservice
+  repository: file://charts/currencyservice
+  version: 0.1.0
+- name: adservice
+  repository: file://charts/adservice
+  version: 0.1.0
+- name: loadgenerator
+  repository: file://charts/loadgenerator
+  version: 0.1.0
+- name: opentelemetry-collector
+  repository: file://charts/opentelemetry-collector
+  version: 0.1.0
+digest: sha256:f4531aa3f567b109c40bed3c3cd1cafa23b4bf9df185f443724bb28e1c8330e4
+generated: "2025-09-11T22:00:05.855613352+01:00"

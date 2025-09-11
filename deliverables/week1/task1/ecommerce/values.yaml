@@ -1,123 +1,242 @@
-# Default values for ecommerce.
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Default values for onlineboutique.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+global:
+  replicaCount: 2
+  images:
+    repository: us-central1-docker.pkg.dev/google-samples/microservices-demo
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
 
-# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
-replicaCount: 1
+  adService:
+    enabled: true
+    create: true
+    name: adservice
+    resources:
+      requests:
+        cpu: 200m
+        memory: 180Mi
+      limits:
+        cpu: 300m
+        memory: 300Mi
 
-# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
-image:
-  repository: nginx
-  # This sets the pull policy for images.
-  pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
 
-# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
-imagePullSecrets: []
-# This is to override the chart name.
-nameOverride: ""
-fullnameOverride: ""
 
-# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: true
-  # Automatically mount a ServiceAccount's API credentials?
-  automount: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
+  checkoutService:
+    enabled: true
+    create: true
+    name: checkoutservice
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
 
-# This is for setting Kubernetes Annotations to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-podAnnotations: {}
-# This is for setting Kubernetes Labels to a Pod.
-# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
-podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+  emailService:
+    enabled: true
+    create: true
+    name: emailservice
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
 
-# This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
-service:
-  # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: ClusterIP
-  # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
-  port: 80
 
-# This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
+  loadGenerator:
+    enabled: false
+    create: true
+    name: loadgenerator
+    checkFrontendInitContainer: true
+    resources:
+      requests:
+        cpu: 300m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+  paymentService:
+    enabled: true
+    create: true
+    name: paymentservice
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
 
-# This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
-livenessProbe:
-  httpGet:
-    path: /
-    port: http
-readinessProbe:
-  httpGet:
-    path: /
-    port: http
 
-# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
 
-# Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
+  recommendationService:
+    enabled: true
+    create: true
+    name: recommendationservice
+    resources:
+      requests:
+        cpu: 100m
+        memory: 220Mi
+      limits:
+        cpu: 200m
+        memory: 450Mi
 
-# Additional volumeMounts on the output Deployment definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
+  shippingService:
+    enabled: true
+    create: true
+    name: shippingservice
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
 
-nodeSelector: {}
+  cartDatabase:
+    enabled: true
+    # Specifies the type of the cartservice's database, could be either redis or spanner.
+    type: redis
+    connectionString: "redis-cart:6379"
+    inClusterRedis:
+      create: true
+      name: redis-cart
+      # Uses the public redis image from Docker Hub, otherwise will use the images.repository.
+      publicRepository: true
+    externalRedisTlsOrigination:
+      enable: false
+      name: exernal-redis-tls-origination
+      endpointAddress: ""
+      endpointPort: ""
+      certificate: ""
 
-tolerations: []
+  # @TODO: This service is not currently available in Helm.
+  # https://github.com/GoogleCloudPlatform/microservices-demo/tree/main/kustomize/components/shopping-assistant
+  shoppingAssistantService:
+    create: false
+    name: shoppingassistantservice
 
-affinity: {}
+  
+  cartService:
+    enabled: true
+    create: true
+    name: cartservice
+    resources:
+      requests:
+        cpu: 200m
+        memory: 128Mi
+      limits:
+        cpu: 300m
+        memory: 256Mi
+
+  currencyService:
+    enabled: true
+    create: true
+    name: currencyservice
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+  
+  productCatalogService:
+    enabled: true
+    create: true
+    name: productcatalogservice
+    # Specifies an extra latency to any request on productcatalogservice, by default no extra latency.
+    extraLatency: ""
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  serviceAccounts:
+    # Specifies whether service accounts should be created.
+    create: true
+    # Annotations to add to the service accounts.
+    annotations: {}
+    # Annotations to add only for the cartservice app. This allows to follow the least privilege principle where only cartservice needs to connect to external database for example via Workload Identity.
+    annotationsOnlyForCartservice: false
+          
+  frontend:
+    enabled: true
+    create: true
+    name: frontend
+    externalService: true
+    cymbalBranding: false
+    # One of: local, gcp, aws, azure, onprem, alibaba. When not set, defaults to "local" unless running in GKE, otherwise auto-sets to gcp.
+    platform: local
+    singleSharedSession: false
+    virtualService:
+      create: false
+      hosts:
+      - "*"
+      gateway:
+        name: asm-ingressgateway
+        namespace: asm-ingress
+        labelKey: asm
+        labelValue: ingressgateway
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+
+  networkPolicies:
+    # Specifies if the NetworkPolicies are created or not. If true, one fine granular NetworkPolicy per app is created.
+    create: false
+
+  sidecars:
+   # Specifies if the Sidecars are created or not. If true, one fine granular Sidecar per app is created.
+    create: false
+
+  authorizationPolicies:
+    # Specifies if the AuthorizationPolicies are created or not. If true, one fine granular AuthorizationPolicy per app is created.
+    create: false
+
+  opentelemetryCollector:
+    create: false
+    name: opentelemetrycollector
+    # Specifies the project id for the otel collector. If set as "PROJECT_ID" (default value), an initContainer will automatically retrieve the project id value from the metadata server.
+    projectId: "PROJECT_ID"
+
+  googleCloudOperations:
+    profiler: false
+    tracing: false
+    metrics: false
+
+  eccompProfile:
+    enable: false
+    type: RuntimeDefault
+
+  securityContext:
+    enable: true
+

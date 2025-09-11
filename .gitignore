@@ -24,5 +24,6 @@ Dockerfile.pip
 node_modules/
 obj/
 pkg/
+kubeconfig-lukman.yaml
 release/wi-kubernetes-manifests.yaml
 vendor/
