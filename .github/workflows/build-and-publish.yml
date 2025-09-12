@@ -2,9 +2,14 @@ name: Build & Push Changed Services
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   workflow_dispatch:
+    inputs:
+      force_all:
+        description: Force build all services
+        type: boolean
+        required: false
+        default: false
 
 env:
   DOCKERHUB_USER: joincloudpros
@@ -20,9 +25,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - id: range
+        run: |
+          if [[ -n "${{ github.event.before }}" && "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]]; then
+            echo "base=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            git fetch origin main
+            echo "base=origin/main" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
       - id: paths
         uses: dorny/paths-filter@v3
         with:
+          base: ${{ steps.range.outputs.base }}
+          ref:  ${{ steps.range.outputs.ref }}
           filters: |
             adservice: src/adservice/**
             cartservice: src/cartservice/**
@@ -39,14 +57,15 @@ jobs:
 
       - id: set_matrix
         env:
-          AD: ${{ steps.paths.outputs.adservice }}
+          FORCE_ALL: ${{ github.event.inputs.force_all || 'false' }}
+          AD:   ${{ steps.paths.outputs.adservice }}
           CART: ${{ steps.paths.outputs.cartservice }}
           CHECKOUT: ${{ steps.paths.outputs.checkoutservice }}
           CURR: ${{ steps.paths.outputs.currencyservice }}
           EMAIL: ${{ steps.paths.outputs.emailservice }}
           FRONT: ${{ steps.paths.outputs.frontend }}
           LOAD: ${{ steps.paths.outputs.loadgenerator }}
-          PAY: ${{ steps.paths.outputs.paymentservice }}
+          PAY:  ${{ steps.paths.outputs.paymentservice }}
           PROD: ${{ steps.paths.outputs.productcatalogservice }}
           RECO: ${{ steps.paths.outputs.recommendationservice }}
           SHIP: ${{ steps.paths.outputs.shippingservice }}
@@ -55,18 +74,33 @@ jobs:
           add() { printf '{"service":"%s","context":"%s","dockerfile":"%s"}' "$1" "$2" "$3"; }
           list=()
 
-          if [ "$AD" = "true" ]; then   list+=("$(add adservice src/adservice src/adservice/Dockerfile)"); fi
-          if [ "$CART" = "true" ]; then list+=("$(add cartservice src/cartservice src/cartservice/src/Dockerfile)"); fi
-          if [ "$CHECKOUT" = "true" ]; then list+=("$(add checkoutservice src/checkoutservice src/checkoutservice/Dockerfile)"); fi
-          if [ "$CURR" = "true" ]; then list+=("$(add currencyservice src/currencyservice src/currencyservice/Dockerfile)"); fi
-          if [ "$EMAIL" = "true" ]; then list+=("$(add emailservice src/emailservice src/emailservice/Dockerfile)"); fi
-          if [ "$FRONT" = "true" ]; then list+=("$(add frontend src/frontend src/frontend/Dockerfile)"); fi
-          if [ "$LOAD" = "true" ]; then list+=("$(add loadgenerator src/loadgenerator src/loadgenerator/Dockerfile)"); fi
-          if [ "$PAY" = "true" ]; then list+=("$(add paymentservice src/paymentservice src/paymentservice/Dockerfile)"); fi
-          if [ "$PROD" = "true" ]; then list+=("$(add productcatalogservice src/productcatalogservice src/productcatalogservice/Dockerfile)"); fi
-          if [ "$RECO" = "true" ]; then list+=("$(add recommendationservice src/recommendationservice src/recommendationservice/Dockerfile)"); fi
-          if [ "$SHIP" = "true" ]; then list+=("$(add shippingservice src/shippingservice src/shippingservice/Dockerfile)"); fi
-          if [ "$SHOP" = "true" ]; then list+=("$(add shoppingassistantservice src/shoppingassistantservice src/shoppingassistantservice/Dockerfile)"); fi
+          if [ "$FORCE_ALL" = "true" ]; then
+            list+=("$(add adservice src/adservice src/adservice/Dockerfile)")
+            list+=("$(add cartservice src/cartservice src/cartservice/src/Dockerfile)")
+            list+=("$(add checkoutservice src/checkoutservice src/checkoutservice/Dockerfile)")
+            list+=("$(add currencyservice src/currencyservice src/currencyservice/Dockerfile)")
+            list+=("$(add emailservice src/emailservice src/emailservice/Dockerfile)")
+            list+=("$(add frontend src/frontend src/frontend/Dockerfile)")
+            list+=("$(add loadgenerator src/loadgenerator src/loadgenerator/Dockerfile)")
+            list+=("$(add paymentservice src/paymentservice src/paymentservice/Dockerfile)")
+            list+=("$(add productcatalogservice src/productcatalogservice src/productcatalogservice/Dockerfile)")
+            list+=("$(add recommendationservice src/recommendationservice src/recommendationservice/Dockerfile)")
+            list+=("$(add shippingservice src/shippingservice src/shippingservice/Dockerfile)")
+            list+=("$(add shoppingassistantservice src/shoppingassistantservice src/shoppingassistantservice/Dockerfile)")
+          else
+            [ "$AD"   = "true" ] && list+=("$(add adservice src/adservice src/adservice/Dockerfile)")
+            [ "$CART" = "true" ] && list+=("$(add cartservice src/cartservice src/cartservice/src/Dockerfile)")
+            [ "$CHECKOUT" = "true" ] && list+=("$(add checkoutservice src/checkoutservice src/checkoutservice/Dockerfile)")
+            [ "$CURR" = "true" ] && list+=("$(add currencyservice src/currencyservice src/currencyservice/Dockerfile)")
+            [ "$EMAIL" = "true" ] && list+=("$(add emailservice src/emailservice src/emailservice/Dockerfile)")
+            [ "$FRONT" = "true" ] && list+=("$(add frontend src/frontend src/frontend/Dockerfile)")
+            [ "$LOAD" = "true" ] && list+=("$(add loadgenerator src/loadgenerator src/loadgenerator/Dockerfile)")
+            [ "$PAY"  = "true" ] && list+=("$(add paymentservice src/paymentservice src/paymentservice/Dockerfile)")
+            [ "$PROD" = "true" ] && list+=("$(add productcatalogservice src/productcatalogservice src/productcatalogservice/Dockerfile)")
+            [ "$RECO" = "true" ] && list+=("$(add recommendationservice src/recommendationservice src/recommendationservice/Dockerfile)")
+            [ "$SHIP" = "true" ] && list+=("$(add shippingservice src/shippingservice src/shippingservice/Dockerfile)")
+            [ "$SHOP" = "true" ] && list+=("$(add shoppingassistantservice src/shoppingassistantservice src/shoppingassistantservice/Dockerfile)")
+          fi
 
           if [ ${#list[@]} -eq 0 ]; then
             echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
