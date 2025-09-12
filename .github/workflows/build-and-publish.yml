@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKERHUB_USER: yourdockerhubusername
+  DOCKERHUB_USER: joincloudpros
   IMAGE_PREFIX: ecommerce
 
 jobs:
