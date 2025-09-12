@@ -25,14 +25,13 @@ COPY . .
 RUN chmod +x gradlew
 RUN ./gradlew installDist
 
+# ---------------------------------------------------------------
+# ✅ Final runtime image with a usable shell
+# ---------------------------------------------------------------
 FROM eclipse-temurin:21.0.4_7-jre-alpine@sha256:8cc1202a100e72f6e91bf05ab274b373a5def789ab6d9e3e293a61236662ac27
 
-# @TODO: https://github.com/GoogleCloudPlatform/microservices-demo/issues/2517
-# Download Stackdriver Profiler Java agent
-# RUN mkdir -p /opt/cprof && \
-#     wget -q -O- https://storage.googleapis.com/cloud-profiler/java/latest/profiler_java_agent_alpine.tar.gz \
-#     | tar xzv -C /opt/cprof && \
-#     rm -rf profiler_java_agent.tar.gz
+# ✅ Add a minimal shell and basic tools for kubectl exec
+RUN apk add --no-cache bash curl procps
 
 WORKDIR /app
 COPY --from=builder /app .

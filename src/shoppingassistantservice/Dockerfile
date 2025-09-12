@@ -25,11 +25,19 @@ RUN apt-get -qq update \
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+# ---------------------------------------------------------------
+# Final runtime image with a shell
+# ---------------------------------------------------------------
 FROM base
+
+# ✅ Install a minimal shell and basic debugging tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      bash curl procps \
+    && rm -rf /var/lib/apt/lists/*
+
 # Enable unbuffered logging
 ENV PYTHONUNBUFFERED=1
 
-# get packages
 WORKDIR /shoppingassistantservice
 
 # Grab packages from builder

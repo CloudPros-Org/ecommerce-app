@@ -17,10 +17,17 @@ FROM python:3.12.6-slim@sha256:ad48727987b259854d52241fac3bc633574364867b8e20aec
 FROM base AS builder
 
 COPY requirements.txt .
-
 RUN pip install --prefix="/install" -r requirements.txt
 
+# ---------------------------------------------------------------
+# Final runtime image with a shell
+# ---------------------------------------------------------------
 FROM base
+
+# ✅ Install a minimal shell and debugging tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      bash curl procps \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /loadgen
 

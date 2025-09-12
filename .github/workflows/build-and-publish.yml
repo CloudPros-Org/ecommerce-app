@@ -1,0 +1,94 @@
+name: Build & Push Changed Services
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DOCKERHUB_USER: joincloudpros
+  IMAGE_PREFIX: ecommerce-app
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed services
+        id: paths
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            adservice: src/adservice/**
+            cartservice: src/cartservice/**
+            checkoutservice: src/checkoutservice/**
+            currencyservice: src/currencyservice/**
+            emailservice: src/emailservice/**
+            frontend: src/frontend/**
+            loadgenerator: src/loadgenerator/**
+            paymentservice: src/paymentservice/**
+            productcatalogservice: src/productcatalogservice/**
+            recommendationservice: src/recommendationservice/**
+            shippingservice: src/shippingservice/**
+            shoppingassistantservice: src/shoppingassistantservice/**
+
+      - name: Build matrix JSON
+        id: set-matrix
+        run: |
+          CHANGED=()
+          for SVC in adservice cartservice checkoutservice currencyservice \
+                     emailservice frontend loadgenerator paymentservice \
+                     productcatalogservice recommendationservice shippingservice \
+                     shoppingassistantservice; do
+            if [ "${{ steps.paths.outputs[$SVC] }}" = "true" ]; then
+              CHANGED+=("\"$SVC\"")
+            fi
+          done
+          echo "matrix={\"service\":[${CHANGED[*]}]}" >> $GITHUB_OUTPUT
+
+  build:
+    needs: detect
+    if: ${{ fromJson(needs.detect.outputs.matrix).service != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine next semver
+        id: semver
+        run: |
+          SVC=${{ matrix.service }}
+          IMAGE="${DOCKERHUB_USER}/${IMAGE_PREFIX}-${SVC}"
+          LATEST=$(curl -fsSL "https://hub.docker.com/v2/repositories/${IMAGE}/tags/?page_size=1&page=1&ordering=last_updated" \
+                   | jq -r '.results[0].name' || echo "")
+          if [[ -z "$LATEST" || "$LATEST" == "null" ]]; then
+            NEW="0.0.1"
+          else
+            IFS='.' read -r MAJ MIN PAT <<<"$LATEST"
+            PAT=$((PAT + 1))
+            NEW="${MAJ:-0}.${MIN:-0}.${PAT:-0}"
+          fi
+          echo "version=${NEW}" >> $GITHUB_OUTPUT
+
+      - name: Build & Push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./src/${{ matrix.service }}
+          file: ./src/${{ matrix.service }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_USER }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ steps.semver.outputs.version }}

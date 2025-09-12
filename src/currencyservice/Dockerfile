@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ---------------------------------------------------------------
+# Build stage
+# ---------------------------------------------------------------
 FROM node:20.17.0-alpine@sha256:2d07db07a2df6830718ae2a47db6fedce6745f5bcd174c398f2acdda90a11c03 AS builder
 
 # Some packages (e.g. @google-cloud/profiler) require additional
@@ -24,19 +27,20 @@ RUN apk add --update --no-cache \
 WORKDIR /usr/src/app
 
 COPY package*.json ./
-
 RUN npm install --only=production
 
+# ---------------------------------------------------------------
+# Final runtime image with a shell
+# ---------------------------------------------------------------
 FROM alpine:3.20.3@sha256:1e42bbe2508154c9126d48c2b8a75420c3544343bf86fd041fb7527e017a4b4a
 
-RUN apk add --no-cache nodejs
+# ✅ Install Node.js and a shell for kubectl exec
+RUN apk add --no-cache nodejs bash curl procps
 
 WORKDIR /usr/src/app
 
 COPY --from=builder /usr/src/app/node_modules ./node_modules
-
 COPY . .
 
 EXPOSE 7000
-
 ENTRYPOINT [ "node", "server.js" ]

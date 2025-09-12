@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ---------------------------------------------------------------
+# Build stage
+# ---------------------------------------------------------------
 FROM golang:1.23.2-alpine@sha256:9dd2625a1ff2859b8d8b01d8f7822c0f528942fe56cfe7a1e7c38d3b8d72d679 AS builder
 WORKDIR /src
 
@@ -24,15 +27,19 @@ COPY . .
 ARG SKAFFOLD_GO_GCFLAGS
 RUN CGO_ENABLED=0 GOOS=linux go build -gcflags="${SKAFFOLD_GO_GCFLAGS}" -o /go/bin/shippingservice .
 
-FROM scratch
+# ---------------------------------------------------------------
+# Final runtime image with a shell
+# ---------------------------------------------------------------
+FROM alpine:3.19
+
+# ✅ Install a minimal shell and basic debugging tools
+RUN apk add --no-cache bash curl procps ca-certificates
 
 WORKDIR /src
 COPY --from=builder /go/bin/shippingservice /src/shippingservice
 ENV APP_PORT=50051
 
-# Definition of this variable is used by 'skaffold debug' to identify a golang binary.
-# Default behavior - a failure prints a stack trace for the current goroutine.
-# See https://golang.org/pkg/runtime/
+# Skaffold debug variable
 ENV GOTRACEBACK=single
 
 EXPOSE 50051

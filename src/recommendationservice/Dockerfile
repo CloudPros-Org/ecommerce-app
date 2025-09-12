@@ -26,11 +26,17 @@ RUN apk update \
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
+# ---------------------------------------------------------------
+# Final runtime image with a shell
+# ---------------------------------------------------------------
 FROM base
+
+# ✅ Install a minimal shell and basic debugging tools
+RUN apk add --no-cache bash curl procps
+
 # Enable unbuffered logging
 ENV PYTHONUNBUFFERED=1
 
-# get packages
 WORKDIR /recommendationservice
 
 # Grab packages from builder
