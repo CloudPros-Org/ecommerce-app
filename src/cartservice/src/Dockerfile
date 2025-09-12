@@ -1,8 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0.100-noble AS builder
 WORKDIR /app
-COPY cartservice.csproj .
+COPY src/cartservice.csproj .
 RUN dotnet restore cartservice.csproj -r linux-x64
-COPY . .
+COPY src/ .
 RUN dotnet publish cartservice.csproj \
     -p:PublishSingleFile=true \
     -r linux-x64 \
