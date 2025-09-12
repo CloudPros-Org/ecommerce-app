@@ -7,21 +7,20 @@ on:
   workflow_dispatch:
 
 env:
-  DOCKERHUB_USER: joincloudpros
-  IMAGE_PREFIX: ecommerce-app
+  DOCKERHUB_USER: yourdockerhubusername
+  IMAGE_PREFIX: ecommerce
 
 jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.set_matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Detect changed services
-        id: paths
+      - id: paths
         uses: dorny/paths-filter@v3
         with:
           filters: |
@@ -38,23 +37,46 @@ jobs:
             shippingservice: src/shippingservice/**
             shoppingassistantservice: src/shoppingassistantservice/**
 
-      - name: Build matrix JSON
-        id: set-matrix
+      - id: set_matrix
+        env:
+          AD: ${{ steps.paths.outputs.adservice }}
+          CART: ${{ steps.paths.outputs.cartservice }}
+          CHECKOUT: ${{ steps.paths.outputs.checkoutservice }}
+          CURR: ${{ steps.paths.outputs.currencyservice }}
+          EMAIL: ${{ steps.paths.outputs.emailservice }}
+          FRONT: ${{ steps.paths.outputs.frontend }}
+          LOAD: ${{ steps.paths.outputs.loadgenerator }}
+          PAY: ${{ steps.paths.outputs.paymentservice }}
+          PROD: ${{ steps.paths.outputs.productcatalogservice }}
+          RECO: ${{ steps.paths.outputs.recommendationservice }}
+          SHIP: ${{ steps.paths.outputs.shippingservice }}
+          SHOP: ${{ steps.paths.outputs.shoppingassistantservice }}
         run: |
-          CHANGED=()
-          for SVC in adservice cartservice checkoutservice currencyservice \
-                     emailservice frontend loadgenerator paymentservice \
-                     productcatalogservice recommendationservice shippingservice \
-                     shoppingassistantservice; do
-            if [ "${{ steps.paths.outputs[$SVC] }}" = "true" ]; then
-              CHANGED+=("\"$SVC\"")
-            fi
-          done
-          echo "matrix={\"service\":[${CHANGED[*]}]}" >> $GITHUB_OUTPUT
+          add() { printf '{"service":"%s","context":"%s","dockerfile":"%s"}' "$1" "$2" "$3"; }
+          list=()
+
+          if [ "$AD" = "true" ]; then   list+=("$(add adservice src/adservice src/adservice/Dockerfile)"); fi
+          if [ "$CART" = "true" ]; then list+=("$(add cartservice src/cartservice src/cartservice/src/Dockerfile)"); fi
+          if [ "$CHECKOUT" = "true" ]; then list+=("$(add checkoutservice src/checkoutservice src/checkoutservice/Dockerfile)"); fi
+          if [ "$CURR" = "true" ]; then list+=("$(add currencyservice src/currencyservice src/currencyservice/Dockerfile)"); fi
+          if [ "$EMAIL" = "true" ]; then list+=("$(add emailservice src/emailservice src/emailservice/Dockerfile)"); fi
+          if [ "$FRONT" = "true" ]; then list+=("$(add frontend src/frontend src/frontend/Dockerfile)"); fi
+          if [ "$LOAD" = "true" ]; then list+=("$(add loadgenerator src/loadgenerator src/loadgenerator/Dockerfile)"); fi
+          if [ "$PAY" = "true" ]; then list+=("$(add paymentservice src/paymentservice src/paymentservice/Dockerfile)"); fi
+          if [ "$PROD" = "true" ]; then list+=("$(add productcatalogservice src/productcatalogservice src/productcatalogservice/Dockerfile)"); fi
+          if [ "$RECO" = "true" ]; then list+=("$(add recommendationservice src/recommendationservice src/recommendationservice/Dockerfile)"); fi
+          if [ "$SHIP" = "true" ]; then list+=("$(add shippingservice src/shippingservice src/shippingservice/Dockerfile)"); fi
+          if [ "$SHOP" = "true" ]; then list+=("$(add shoppingassistantservice src/shoppingassistantservice src/shoppingassistantservice/Dockerfile)"); fi
+
+          if [ ${#list[@]} -eq 0 ]; then
+            echo 'matrix={"include":[]}' >> "$GITHUB_OUTPUT"
+          else
+            printf 'matrix={"include":[%s]}\n' "$(IFS=, ; echo "${list[*]}")" >> "$GITHUB_OUTPUT"
+          fi
 
   build:
     needs: detect
-    if: ${{ fromJson(needs.detect.outputs.matrix).service != '' }}
+    if: ${{ toJson(fromJson(needs.detect.outputs.matrix).include) != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -62,33 +84,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ env.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Determine next semver
-        id: semver
+      - id: semver
         run: |
-          SVC=${{ matrix.service }}
-          IMAGE="${DOCKERHUB_USER}/${IMAGE_PREFIX}-${SVC}"
-          LATEST=$(curl -fsSL "https://hub.docker.com/v2/repositories/${IMAGE}/tags/?page_size=1&page=1&ordering=last_updated" \
-                   | jq -r '.results[0].name' || echo "")
-          if [[ -z "$LATEST" || "$LATEST" == "null" ]]; then
+          IMAGE="${{ env.DOCKERHUB_USER }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}"
+          LATEST=$(curl -fsSL "https://hub.docker.com/v2/repositories/${IMAGE}/tags/?page_size=100" \
+                   | jq -r '[.results[].name | select(test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))]
+                             | sort_by(split(".")|map(tonumber)) | last // ""')
+          if [ -z "$LATEST" ]; then
             NEW="0.0.1"
           else
             IFS='.' read -r MAJ MIN PAT <<<"$LATEST"
             PAT=$((PAT + 1))
-            NEW="${MAJ:-0}.${MIN:-0}.${PAT:-0}"
+            NEW="${MAJ}.${MIN}.${PAT}"
           fi
-          echo "version=${NEW}" >> $GITHUB_OUTPUT
+          echo "version=$NEW" >> "$GITHUB_OUTPUT"
 
-      - name: Build & Push Docker image
-        uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v6
         with:
-          context: ./src/${{ matrix.service }}
-          file: ./src/${{ matrix.service }}/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: |
             ${{ env.DOCKERHUB_USER }}/${{ env.IMAGE_PREFIX }}-${{ matrix.service }}:${{ steps.semver.outputs.version }}
