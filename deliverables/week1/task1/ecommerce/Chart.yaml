@@ -37,3 +37,43 @@ version: 0.10.3
 # It is recommended to use it with quotes.
 appVersion: "v0.10.3"
 
+dependencies:
+  - name: frontend
+    version: 0.1.0
+    repository: "file://charts/frontend"
+  - name: cartservice
+    version: 0.1.0
+    repository: "file://charts/cartservice"
+  - name: productcatalogueservice
+    version: 0.1.0
+    repository: "file://charts/productcatalogueservice"
+  - name: shippingservice
+    version: 0.1.0
+    repository: "file://charts/shippingservice"
+  - name: emailservice
+    version: 0.1.0
+    repository: "file://charts/emailservice"
+  - name: common
+    version: 0.1.0
+    repository: "file://charts/common"
+  - name: checkoutservice
+    version: 0.1.0
+    repository: "file://charts/checkoutservice"
+  - name: paymentservice
+    version: 0.1.0
+    repository: "file://charts/paymentservice"
+  - name: recommendationservice
+    version: 0.1.0
+    repository: "file://charts/recommendationservice"
+  - name: currencyservice
+    version: 0.1.0
+    repository: "file://charts/currencyservice"
+  - name: adservice
+    version: 0.1.0
+    repository: "file://charts/adservice"
+  - name: loadgenerator
+    version: 0.1.0
+    repository: "file://charts/loadgenerator"
+  - name: opentelemetry-collector
+    version: 0.1.0
+    repository: "file://charts/opentelemetry-collector"
