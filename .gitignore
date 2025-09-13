@@ -27,3 +27,4 @@ pkg/
 kubeconfig-lukman.yaml
 release/wi-kubernetes-manifests.yaml
 vendor/
+kind-cluster.yaml
